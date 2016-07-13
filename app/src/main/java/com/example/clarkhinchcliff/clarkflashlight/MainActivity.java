@@ -1,5 +1,6 @@
 package com.example.clarkhinchcliff.clarkflashlight;
 
+import android.app.Activity;
 import android.graphics.Camera;
 import android.media.MediaPlayer;
 import android.support.v7.app.AppCompatActivity;
@@ -8,7 +9,7 @@ import android.widget.ImageButton;
 
 import java.security.Policy;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private ImageButton btnSwitch;
     private Camera camera;
@@ -19,7 +20,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_main);
-//        btnSwitch = (ImageButton) findViewById(R.id.btnSwitch);
+        setContentView(R.layout.activity_main);
+        btnSwitch = (ImageButton) findViewById(R.id.btnSwitch);
     }
 }
