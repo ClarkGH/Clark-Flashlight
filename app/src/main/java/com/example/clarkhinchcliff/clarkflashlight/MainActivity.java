@@ -1,207 +1,87 @@
 package com.example.clarkhinchcliff.clarkflashlight;
 
-import android.content.Context;
-import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureRequest;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Size;
-import android.view.Surface;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 
-import java.util.ArrayList;
-import java.util.List;
+public class MainActivity extends Activity {
 
-public class MainActivity extends AppCompatActivity
-{
-    private CameraManager cameraManager;
-    private CameraCharacteristics cameraCharacteristics;
-
-    private CameraDevice mCameraDevice;
-    private CameraCaptureSession mSession;
-
-    private CaptureRequest.Builder mBuilder;
-
-    private Button on;
-    private Button off;
-
+    private Camera camera;
+    Button flashlightSwitchImg;
+    private boolean isFlashlightOn;
+    Parameters params;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        on = (Button) findViewById(R.id.on);
-        off = (Button) findViewById(R.id.off);
+        // flashlight on off Image
+        flashlightSwitchImg = (android.widget.Button) findViewById(R.id.flashlightSwitch);
 
-        initCamera();
-    }
+        boolean isCameraFlash = getApplicationContext().getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
 
-    public void click(View v)
-    {
-        switch (v.getId())
-        {
-            case R.id.on:
-                try
-                {
-                    turnOnFlashLight();
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                break;
-            case R.id.off:
-                turnOffFlashLight();
-                break;
+        if (!isCameraFlash) {
+            showNoCameraAlert();
+        } else {
+            camera = Camera.open();
+            params = camera.getParameters();
         }
-    }
 
-    private void initCamera()
-    {
-        cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        try
-        {
-            String[] id = cameraManager.getCameraIdList();
-            if (id != null && id.length > 0)
-            {
-                cameraCharacteristics = cameraManager.getCameraCharacteristics(id[0]);
-                boolean isFlash = cameraCharacteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
-                if (isFlash)
-                {
-                    cameraManager.openCamera(id[0], new MyCameraDeviceStateCallback(), null);
+        flashlightSwitchImg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (isFlashlightOn) {
+                    setFlashlightOff();
+                } else {
+                    setFlashlightOn();
                 }
             }
-        }
-        catch (CameraAccessException e)
-        {
-            e.printStackTrace();
-        }
+        });
     }
 
-    class MyCameraDeviceStateCallback extends CameraDevice.StateCallback
-    {
-
-        @Override
-        public void onOpened(CameraDevice camera)
-        {
-            mCameraDevice = camera;
-            // get builder
-            try
-            {
-                mBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                List<Surface> list = new ArrayList<Surface>();
-                SurfaceTexture mSurfaceTexture = new SurfaceTexture(1);
-                Size size = getSmallestSize(mCameraDevice.getId());
-                mSurfaceTexture.setDefaultBufferSize(size.getWidth(), size.getHeight());
-                Surface mSurface = new Surface(mSurfaceTexture);
-                list.add(mSurface);
-                mBuilder.addTarget(mSurface);
-                camera.createCaptureSession(list, new MyCameraCaptureSessionStateCallback(), null);
-            }
-            catch (CameraAccessException e)
-            {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void onDisconnected(CameraDevice camera)
-        {
-
-        }
-
-        @Override
-        public void onError(CameraDevice camera, int error)
-        {
-
-        }
+    private void showNoCameraAlert(){
+        new AlertDialog.Builder(this)
+                .setTitle("Error: No Camera Flash!")
+                .setMessage("Camera flashlight not available in this Android device!")
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish(); // close the Android app
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+        return;
+    }
+    private void setFlashlightOn() {
+        params = camera.getParameters();
+        params.setFlashMode(Parameters.FLASH_MODE_TORCH);
+        camera.setParameters(params);
+        camera.startPreview();
+        isFlashlightOn = true;
     }
 
-    private Size getSmallestSize(String cameraId) throws CameraAccessException
-    {
-        Size[] outputSizes = cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(SurfaceTexture.class);
-        if (outputSizes == null || outputSizes.length == 0)
-        {
-            throw new IllegalStateException("Camera " + cameraId + "doesn't support any outputSize.");
-        }
-        Size chosen = outputSizes[0];
-        for (Size s : outputSizes)
-        {
-            if (chosen.getWidth() >= s.getWidth() && chosen.getHeight() >= s.getHeight())
-            {
-                chosen = s;
-            }
-        }
-        return chosen;
+    private void setFlashlightOff() {
+        params.setFlashMode(Parameters.FLASH_MODE_OFF);
+        camera.setParameters(params);
+        camera.stopPreview();
+        isFlashlightOn = false;
     }
 
-    class MyCameraCaptureSessionStateCallback extends CameraCaptureSession.StateCallback
-    {
-        @Override
-        public void onConfigured(CameraCaptureSession session)
-        {
-            mSession = session;
-            try
-            {
-                mSession.setRepeatingRequest(mBuilder.build(), null, null);
-            }
-            catch (CameraAccessException e)
-            {
-                e.printStackTrace();
-            }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (camera != null) {
+            camera.release();
+            camera = null;
         }
-
-        @Override
-        public void onConfigureFailed(CameraCaptureSession session)
-        {
-
-        }
-    }
-
-    public void turnOnFlashLight()
-    {
-        try
-        {
-            mBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
-            mSession.setRepeatingRequest(mBuilder.build(), null, null);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    public void turnOffFlashLight()
-    {
-        try
-        {
-            mBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
-            mSession.setRepeatingRequest(mBuilder.build(), null, null);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    private void close()
-    {
-        if (mCameraDevice == null || mSession == null)
-        {
-            return;
-        }
-        mSession.close();
-        mCameraDevice.close();
-        mCameraDevice = null;
-        mSession = null;
     }
 }
