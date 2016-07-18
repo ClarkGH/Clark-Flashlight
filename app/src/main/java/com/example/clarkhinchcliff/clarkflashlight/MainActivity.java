@@ -13,7 +13,7 @@ import android.widget.ImageButton;
 
 public class MainActivity extends Activity {
 
-    private Camera2 camera;
+    private Camera camera;
     Button flashlightSwitchImg;
     private boolean isFlashlightOn;
     Parameters params;
@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
         if (!isCameraFlash) {
             showNoCameraAlert();
         } else {
-            camera = Camera2.open();
+            camera = Camera.open();
             params = camera.getParameters();
         }
 
@@ -67,7 +67,6 @@ public class MainActivity extends Activity {
         camera.setParameters(params);
         camera.startPreview();
         isFlashlightOn = true;
-        flashlightSwitchImg.setImageResource(R.drawable.light_on);
     }
 
     private void setFlashlightOff() {
@@ -75,7 +74,6 @@ public class MainActivity extends Activity {
         camera.setParameters(params);
         camera.stopPreview();
         isFlashlightOn = false;
-        flashlightSwitchImg.setImageResource(R.drawable.light_off);
     }
 
     @Override
