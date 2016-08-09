@@ -1,4 +1,4 @@
-package com.example.clarkhinchcliff.clarkflashlight;
+package com.clark.clarkhinchcliff.clarkflashlight;
 
 import org.junit.Test;
 
